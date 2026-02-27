@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transport Arrangement Request</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+            background: #eef1f6;
+            color: #1a1a1a;
+            min-height: 100vh;
+        }
+
+        /* ── Header ── */
+        .app-header {
+            background: #1b3a6b;
+            color: #fff;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.25);
+        }
+        .app-header h1 { font-size: 17px; font-weight: 600; letter-spacing: .2px; }
+
+        /* ── Two-column layout ── */
+        .app-body {
+            display: grid;
+            grid-template-columns: 460px 1fr;
+            height: calc(100vh - 52px);
+        }
+
+        /* ── Left panel (form) ── */
+        .form-panel {
+            background: #fff;
+            border-right: 1px solid #d4d9e3;
+            overflow-y: auto;
+            padding: 18px 12px 24px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+
+        /* ── Favorites panel ── */
+        .favs-panel {
+            border: 1px solid #e0e7f0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f8fafd;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .favs-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 13px;
+            background: #eef3fa;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1b3a6b;
+            font-family: inherit;
+            text-align: left;
+        }
+        .favs-toggle:hover { background: #e4edf8; }
+        .favs-toggle .fav-badge {
+            background: #1b3a6b;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 6px;
+            min-width: 18px;
+            text-align: center;
+            display: none;
+        }
+        .favs-toggle .fav-chevron { margin-left: auto; color: #6b7280; font-size: 11px; }
+        .favs-content {
+            display: none;
+            padding: 12px;
+            display: flex; /* default open on first render; JS toggles */
+            flex-direction: column;
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .favs-section-title {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+        .fav-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .fav-item-label { flex: 1; min-width: 0; }
+        .fav-item-name { font-size: 13px; color: #111; }
+        .fav-item-sub  { font-size: 11px; color: #6b7280; }
+        .fav-del-btn {
+            flex-shrink: 0;
+            border: none;
+            background: none;
+            color: #d1d5db;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            padding: 0 2px;
+        }
+        .fav-del-btn:hover { color: #b91c1c; }
+        .fav-empty { font-size: 12px; color: #9ca3af; padding: 2px 4px; }
+
+        /* Greeting row */
+        .greeting-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f6f8fc;
+            border: 1px solid #d4d9e3;
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+        .greeting-row > span {
+            font-size: 14px;
+            color: #374151;
+            white-space: nowrap;
+        }
+        .greeting-row input {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            border-bottom: 1.5px solid #9ca3af;
+            background: transparent;
+            font-size: 14px;
+            padding: 1px 4px;
+            outline: none;
+            color: #111;
+            font-family: inherit;
+        }
+        .greeting-row input:focus { border-bottom-color: #1b3a6b; }
+
+        /* Trip card */
+        .trip-card {
+            border: 1px solid #d4d9e3;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .trip-header {
+            background: #1b3a6b;
+            color: #fff;
+            padding: 7px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+        .trip-header-title {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex: 1;
+            min-width: 0;
+        }
+        .trip-collapse-icon { font-size: 11px; opacity: .8; flex-shrink: 0; }
+        .trip-summary {
+            font-size: 11.5px;
+            font-weight: 400;
+            color: rgba(255,255,255,.7);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+        .trip-header-actions { display: flex; gap: 5px; }
+        .location-row {
+            display: grid;
+            grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+            gap: 4px;
+            align-items: end;
+        }
+        .btn-swap {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #f9fafb;
+            color: #374151;
+            padding: 7px 6px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            flex-shrink: 0;
+            transition: background .15s, border-color .15s;
+            align-self: end;
+        }
+        .btn-swap:hover { background: #e9eef8; border-color: #9ca3af; }
+        .btn-chip {
+            border: none;
+            padding: 3px 7px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+        }
+        .btn-chip-dup  { background: rgba(255,255,255,.20); color: #fff; }
+        .btn-chip-dup:hover  { background: rgba(255,255,255,.33); }
+        .btn-chip-del  { background: rgba(231,76,60,.55);  color: #fff; }
+        .btn-chip-del:hover  { background: rgba(231,76,60,.85); }
+
+        .trip-body {
+            padding: 12px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 9px;
+        }
+        .full-width { grid-column: 1 / -1; }
+
+        .field-group { display: flex; flex-direction: column; gap: 3px; }
+        .field-group label {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            color: #4b5563;
+        }
+        .field-group input,
+        .field-group select,
+        .field-group textarea {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 7px 9px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            background: #fff;
+            color: #111;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .field-group input:focus,
+        .field-group select:focus,
+        .field-group textarea:focus {
+            border-color: #1b3a6b;
+            box-shadow: 0 0 0 2.5px rgba(27,58,107,.13);
+        }
+        .field-group textarea { resize: vertical; min-height: 52px; }
+        .field-group input[type="number"] { -moz-appearance: textfield; }
+        .field-group input[type="number"]::-webkit-outer-spin-button,
+        .field-group input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        /* Input with action button(s) */
+        .input-with-btn { display: flex; gap: 4px; min-width: 0; }
+        .input-with-btn input { flex: 1; min-width: 0; }
+        .btn-fav {
+            flex-shrink: 0;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: #f9fafb;
+            color: #374151;
+            padding: 0 8px;
+            cursor: pointer;
+            font-size: 13px;
+            white-space: nowrap;
+            transition: background .15s, border-color .15s;
+            line-height: 1;
+        }
+        .btn-fav:hover { background: #e9eef8; border-color: #9ca3af; }
+        .btn-fav-star { color: #c9940a; }
+        .btn-fav-star:hover { background: #fef9ec; border-color: #c9940a; }
+
+        /* Buttons */
+        .btn {
+            border: none;
+            border-radius: 7px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background .15s, transform .08s;
+        }
+        .btn:active { transform: scale(.97); }
+        .btn-outline {
+            background: #fff;
+            color: #1b3a6b;
+            border: 1.5px solid #1b3a6b;
+        }
+        .btn-outline:hover { background: #eef2fb; }
+        .btn-green {
+            background: #16a34a;
+            color: #fff;
+            font-size: 14px;
+            padding: 11px 20px;
+        }
+        .btn-green:hover { background: #15803d; }
+        .btn-danger-outline {
+            background: #fff;
+            color: #b91c1c;
+            border: 1.5px solid #b91c1c;
+        }
+        .btn-danger-outline:hover { background: #fef2f2; }
+
+        .add-row {
+            display: flex;
+            justify-content: center;
+            padding: 2px 0 4px;
+        }
+
+        /* ── Floating dropdown ── */
+        .float-dropdown {
+            position: fixed;
+            z-index: 10000;
+            background: #fff;
+            border: 1px solid #d4d9e3;
+            border-radius: 8px;
+            box-shadow: 0 6px 24px rgba(0,0,0,.15);
+            min-width: 210px;
+            max-width: 300px;
+            max-height: 260px;
+            overflow-y: auto;
+            display: none;
+        }
+        .dd-header {
+            padding: 7px 12px 6px;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #9ca3af;
+            border-bottom: 1px solid #f0f0f0;
+            position: sticky;
+            top: 0;
+            background: #fff;
+        }
+        .dd-save-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #1b3a6b;
+            font-weight: 600;
+            border-bottom: 1px solid #f0f0f0;
+            background: #f6f9ff;
+        }
+        .dd-save-row:hover { background: #eaf0fb; }
+        .dd-item {
+            display: flex;
+            align-items: center;
+            padding: 7px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            gap: 6px;
+        }
+        .dd-item:hover { background: #f0f4ff; }
+        .dd-item-label { flex: 1; min-width: 0; }
+        .dd-item-name { font-size: 13px; color: #111; }
+        .dd-item-sub  { font-size: 11px; color: #6b7280; }
+        .dd-del {
+            flex-shrink: 0;
+            border: none;
+            background: none;
+            color: #d1d5db;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 2px;
+            line-height: 1;
+        }
+        .dd-del:hover { color: #b91c1c; }
+        .dd-empty {
+            padding: 14px 12px;
+            font-size: 12px;
+            color: #9ca3af;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* ── Right panel (preview) ── */
+        .preview-panel {
+            background: #f0f3f8;
+            overflow-y: auto;
+            padding: 20px 24px;
+        }
+        .preview-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .preview-top h2 { font-size: 15px; color: #374151; font-weight: 700; }
+
+        .preview-email-frame {
+            background: #fff;
+            border: 1px solid #d4d9e3;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.07);
+            overflow: hidden;
+        }
+        .preview-email-bar {
+            background: #f6f8fc;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .preview-email-bar b { color: #374151; }
+        .preview-email-body {
+            padding: 20px 24px;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+            font-size: 11pt;
+            color: #000;
+            overflow-x: auto;
+        }
+        .preview-email-body table {
+            border-collapse: collapse;
+            min-width: 600px;
+            width: 100%;
+        }
+        .preview-email-body th {
+            border: 1px solid #666;
+            padding: 5px 7px;
+            background: #dce3ef;
+            font-size: 9.5pt;
+            font-weight: bold;
+            text-align: center;
+            white-space: nowrap;
+            color: #000;
+        }
+        .preview-email-body td {
+            border: 1px solid #999;
+            padding: 5px 7px;
+            font-size: 9.5pt;
+            vertical-align: top;
+            color: #000;
+        }
+        .preview-email-body p { margin: 0 0 10pt; }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1b3a6b;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity .25s, transform .25s;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 4px 16px rgba(0,0,0,.25);
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c4cbd8; border-radius: 3px; }
+
+        /* ── Floating avatar ── */
+        .avatar-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 3px 12px rgba(0,0,0,.25);
+            cursor: pointer;
+            overflow: hidden;
+            padding: 0;
+            background: none;
+            transition: transform .15s, box-shadow .15s;
+            z-index: 8000;
+        }
+        .avatar-btn:hover { transform: scale(1.08); box-shadow: 0 5px 18px rgba(0,0,0,.3); }
+        .avatar-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .speech-bubble {
+            position: fixed;
+            bottom: 102px;
+            right: 16px;
+            background: #fff;
+            border: 1px solid #d4d9e3;
+            border-radius: 14px 14px 2px 14px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #1b3a6b;
+            box-shadow: 0 4px 16px rgba(0,0,0,.14);
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(6px) scale(.95);
+            pointer-events: none;
+            transition: opacity .2s, transform .2s;
+            z-index: 8000;
+        }
+        .speech-bubble.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-header">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="3" width="15" height="13" rx="2"/>
+        <path d="M16 8h4l3 4v4h-7V8z"/>
+        <circle cx="5.5" cy="18.5" r="2.5"/>
+        <circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+    <h1>Transport Arrangement Request</h1>
+</div>
+
+<div class="app-body">
+
+    <!-- ── Left: Form ── -->
+    <div class="form-panel" id="formPanel">
+
+        <!-- ── Favorites panel ── -->
+        <div class="favs-panel">
+            <button class="favs-toggle" onclick="toggleFavsPanel()">
+                ⭐ Favorites
+                <span class="fav-badge" id="favsBadge"></span>
+                <span class="fav-chevron" id="favsChevron">▴</span>
+            </button>
+            <div id="favsContent" class="favs-content">
+                <div>
+                    <div class="favs-section-title">Default / Saved Recipients</div>
+                    <div id="favRecipientsList"></div>
+                </div>
+                <div>
+                    <div class="favs-section-title">Saved Guests</div>
+                    <div id="favGuestsList"></div>
+                </div>
+                <div>
+                    <div class="favs-section-title">Saved Locations</div>
+                    <div id="favLocationsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Greeting ── -->
+        <div>
+            <div class="section-label">Greeting</div>
+            <div class="greeting-row">
+                <span>Hi</span>
+                <input type="text" id="recipientName" placeholder="Recipient name" autocomplete="off" oninput="updatePreview()">
+                <span>,</span>
+                <button class="btn-fav btn-fav-star" onclick="saveCurrentRecipient()" title="Save name to favorites">★</button>
+                <button class="btn-fav" onclick="openRecipientPicker(this)" title="Pick from saved recipients">▾</button>
+            </div>
+        </div>
+
+        <!-- ── Trips ── -->
+        <div>
+            <div class="section-label">Transport Requests</div>
+            <div id="tripsContainer"></div>
+            <div class="add-row">
+                <button class="btn btn-outline" onclick="addTrip()">＋ Add Trip</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Right: Preview ── -->
+    <div class="preview-panel">
+        <div class="preview-top">
+            <h2>Live Preview</h2>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-danger-outline" onclick="resetAll()" title="Clear all fields">↺ Reset</button>
+                <button class="btn btn-green" onclick="copyEmail()">📋 Copy Email &nbsp;(paste into Outlook)</button>
+            </div>
+        </div>
+        <div class="preview-email-frame">
+            <div class="preview-email-bar">
+                <b>Subject:</b> Transport arrangement request
+            </div>
+            <div class="preview-email-body" id="previewBody"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Floating dropdown (shared) -->
+<div id="floatDropdown" class="float-dropdown"></div>
+
+<div class="speech-bubble" id="speechBubble">Hello, World! 👋</div>
+<button class="avatar-btn" onclick="toggleBubble()" title="Say hello">
+    <img src="profilepic.jfif" alt="Profile">
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    /* ═══════════════════════════════════════════
+       Favorites storage
+    ═══════════════════════════════════════════ */
+    const FAV_KEY = 'transportFavs';
+
+    function loadFavs() {
+        try {
+            const raw = localStorage.getItem(FAV_KEY);
+            const data = raw ? JSON.parse(raw) : {};
+            return {
+                recipients: data.recipients || [],   // [{ id, name, isDefault }]
+                guests:     data.guests    || [],   // [{ id, name, contact }]
+                locations:  data.locations || [],   // [{ id, name }]
+            };
+        } catch(_) {
+            return { recipients: [], guests: [], locations: [] };
+        }
+    }
+
+    function saveFavs(favs) {
+        try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch(_) {}
+        renderFavsPanel();
+    }
+
+    /* ── Recipient favorites ── */
+    function saveCurrentRecipient() {
+        const name = document.getElementById('recipientName').value.trim();
+        if (!name) { showToast('Enter a recipient name first'); return; }
+        const favs = loadFavs();
+        const exists = favs.recipients.find(r => r.name === name);
+        if (!exists) {
+            // First saved recipient becomes the default
+            const isFirst = favs.recipients.length === 0;
+            favs.recipients.unshift({ id: Date.now(), name, isDefault: isFirst });
+            saveFavs(favs);
+            showToast(`✓ "${name}" saved${isFirst ? ' as default' : ''}`);
+        } else {
+            // Make it default
+            favs.recipients.forEach(r => r.isDefault = false);
+            exists.isDefault = true;
+            saveFavs(favs);
+            showToast(`✓ "${name}" set as default recipient`);
+        }
+    }
+
+    function setRecipientDefault(id) {
+        const favs = loadFavs();
+        favs.recipients.forEach(r => r.isDefault = (r.id === id));
+        saveFavs(favs);
+        showToast('✓ Default recipient updated');
+    }
+
+    function deleteRecipientFav(id) {
+        const favs = loadFavs();
+        favs.recipients = favs.recipients.filter(r => r.id !== id);
+        saveFavs(favs);
+    }
+
+    function openRecipientPicker(btn) {
+        const favs = loadFavs();
+        const currentName = document.getElementById('recipientName').value.trim();
+        const items = [];
+
+        // "Save current" action at top
+        if (currentName && !favs.recipients.find(r => r.name === currentName)) {
+            items.push({
+                type: 'save',
+                html: `＋ Save &ldquo;<b>${esc(currentName)}</b>&rdquo;`,
+                onSelect: () => saveCurrentRecipient(),
+            });
+        }
+
+        // Saved list
+        favs.recipients.forEach(r => {
+            items.push({
+                type: 'item',
+                name: r.name,
+                sub: r.isDefault ? '★ default' : '',
+                onSelect: () => {
+                    document.getElementById('recipientName').value = r.name;
+                    updatePreview();
+                },
+                onDelete: () => { deleteRecipientFav(r.id); openRecipientPicker(btn); },
+                onSetDefault: () => { setRecipientDefault(r.id); openRecipientPicker(btn); },
+            });
+        });
+
+        showFloatDropdown(btn, items, 'Recipients');
+    }
+
+    /* ── Guest favorites ── */
+    function deleteGuestFav(id) {
+        const favs = loadFavs();
+        favs.guests = favs.guests.filter(g => g.id !== id);
+        saveFavs(favs);
+    }
+
+    function openGuestPicker(btn, tripId) {
+        const favs = loadFavs();
+        const card = document.getElementById(`trip-${tripId}`);
+        const curName    = card.querySelector('[data-field="guestName"]').value.trim();
+        const curContact = card.querySelector('[data-field="guestContact"]').value.trim();
+        const items = [];
+
+        if (curName) {
+            const already = favs.guests.find(g => g.name === curName && g.contact === curContact);
+            if (!already) {
+                items.push({
+                    type: 'save',
+                    html: `＋ Save &ldquo;<b>${esc(curName)}</b>&rdquo;${curContact ? ` &nbsp;<span style="font-weight:400;color:#6b7280">${esc(curContact)}</span>` : ''}`,
+                    onSelect: () => {
+                        const f = loadFavs();
+                        if (!f.guests.find(g => g.name === curName && g.contact === curContact)) {
+                            f.guests.unshift({ id: Date.now(), name: curName, contact: curContact });
+                            saveFavs(f);
+                            showToast(`✓ "${curName}" saved to guests`);
+                        }
+                    },
+                });
+            }
+        }
+
+        favs.guests.forEach(g => {
+            items.push({
+                type: 'item',
+                name: g.name,
+                sub: g.contact,
+                onSelect: () => {
+                    card.querySelector('[data-field="guestName"]').value = g.name;
+                    card.querySelector('[data-field="guestContact"]').value = g.contact;
+                    updatePreview();
+                },
+                onDelete: () => { deleteGuestFav(g.id); openGuestPicker(btn, tripId); },
+            });
+        });
+
+        showFloatDropdown(btn, items, 'Guests');
+    }
+
+    /* ── Location favorites ── */
+    function deleteLocationFav(id) {
+        const favs = loadFavs();
+        favs.locations = favs.locations.filter(l => l.id !== id);
+        saveFavs(favs);
+    }
+
+    function openLocationPicker(btn, tripId, field) {
+        const favs = loadFavs();
+        const card = document.getElementById(`trip-${tripId}`);
+        const curLoc = card.querySelector(`[data-field="${field}"]`).value.trim();
+        const label = field === 'pickUpPoint' ? 'Pick Up Locations' : 'Drop Off Locations';
+        const items = [];
+
+        if (curLoc && !favs.locations.find(l => l.name === curLoc)) {
+            items.push({
+                type: 'save',
+                html: `＋ Save &ldquo;<b>${esc(curLoc)}</b>&rdquo;`,
+                onSelect: () => {
+                    const f = loadFavs();
+                    if (!f.locations.find(l => l.name === curLoc)) {
+                        f.locations.unshift({ id: Date.now(), name: curLoc });
+                        saveFavs(f);
+                        showToast(`✓ "${curLoc}" saved to locations`);
+                    }
+                },
+            });
+        }
+
+        favs.locations.forEach(loc => {
+            items.push({
+                type: 'item',
+                name: loc.name,
+                onSelect: () => {
+                    card.querySelector(`[data-field="${field}"]`).value = loc.name;
+                    updatePreview();
+                },
+                onDelete: () => { deleteLocationFav(loc.id); openLocationPicker(btn, tripId, field); },
+            });
+        });
+
+        showFloatDropdown(btn, items, label);
+    }
+
+    /* ═══════════════════════════════════════════
+       Floating dropdown engine
+    ═══════════════════════════════════════════ */
+    let _ddTrigger = null;
+
+    function showFloatDropdown(triggerEl, items, title) {
+        _ddTrigger = triggerEl;
+        const dd = document.getElementById('floatDropdown');
+        dd.innerHTML = '';
+
+        // Header
+        if (title) {
+            const hdr = document.createElement('div');
+            hdr.className = 'dd-header';
+            hdr.textContent = title;
+            dd.appendChild(hdr);
+        }
+
+        if (items.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'dd-empty';
+            empty.innerHTML = 'No saved items yet.<br>Fill in a field then use ★ or the dropdown to save.';
+            dd.appendChild(empty);
+        } else {
+            items.forEach(item => {
+                if (item.type === 'save') {
+                    const row = document.createElement('div');
+                    row.className = 'dd-save-row';
+                    row.innerHTML = item.html;
+                    row.addEventListener('click', e => { e.stopPropagation(); item.onSelect(); closeFloatDropdown(); });
+                    dd.appendChild(row);
+                } else {
+                    const row = document.createElement('div');
+                    row.className = 'dd-item';
+
+                    const lbl = document.createElement('div');
+                    lbl.className = 'dd-item-label';
+                    lbl.innerHTML = `<div class="dd-item-name">${esc(item.name)}</div>`;
+                    if (item.sub) {
+                        lbl.innerHTML += `<div class="dd-item-sub">${esc(item.sub)}</div>`;
+                    }
+                    row.appendChild(lbl);
+
+                    // "Set default" star for recipients
+                    if (item.onSetDefault) {
+                        const starBtn = document.createElement('button');
+                        starBtn.className = 'dd-del';
+                        starBtn.style.color = item.sub === '★ default' ? '#c9940a' : '#d1d5db';
+                        starBtn.title = 'Set as default';
+                        starBtn.textContent = '★';
+                        starBtn.addEventListener('click', e => { e.stopPropagation(); item.onSetDefault(); });
+                        row.appendChild(starBtn);
+                    }
+
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'dd-del';
+                    delBtn.textContent = '✕';
+                    delBtn.title = 'Remove from favorites';
+                    delBtn.addEventListener('click', e => { e.stopPropagation(); item.onDelete(); });
+                    row.appendChild(delBtn);
+
+                    row.addEventListener('click', () => { item.onSelect(); closeFloatDropdown(); });
+                    dd.appendChild(row);
+                }
+            });
+        }
+
+        // Position — prefer below, fall back to above
+        dd.style.visibility = 'hidden';
+        dd.style.display = 'block';
+        const rect = triggerEl.getBoundingClientRect();
+        const ddW  = dd.offsetWidth;
+        const ddH  = dd.offsetHeight;
+        let top  = rect.bottom + 4;
+        let left = rect.left;
+        if (top + ddH > window.innerHeight - 8) top = rect.top - ddH - 4;
+        if (left + ddW > window.innerWidth - 8)  left = rect.right - ddW;
+        if (left < 8) left = 8;
+        dd.style.top  = `${top  + window.scrollY}px`;
+        dd.style.left = `${left + window.scrollX}px`;
+        dd.style.visibility = 'visible';
+    }
+
+    function closeFloatDropdown() {
+        document.getElementById('floatDropdown').style.display = 'none';
+        _ddTrigger = null;
+    }
+
+    document.addEventListener('click', e => {
+        const dd = document.getElementById('floatDropdown');
+        if (dd.style.display !== 'none' && !dd.contains(e.target) && e.target !== _ddTrigger) {
+            closeFloatDropdown();
+        }
+    });
+
+    /* ═══════════════════════════════════════════
+       Favorites panel renderer
+    ═══════════════════════════════════════════ */
+    function renderFavsPanel() {
+        const favs  = loadFavs();
+        const total = favs.recipients.length + favs.guests.length + favs.locations.length;
+        const badge = document.getElementById('favsBadge');
+        badge.textContent = total > 0 ? total : '';
+        badge.style.display = total > 0 ? 'inline-flex' : 'none';
+
+        // Recipients
+        const rList = document.getElementById('favRecipientsList');
+        rList.innerHTML = favs.recipients.length === 0
+            ? '<span class="fav-empty">None saved — type a name and click ★ to save</span>'
+            : favs.recipients.map(r => `
+                <div class="fav-item" style="margin-bottom:4px;">
+                    <div class="fav-item-label">
+                        <span class="fav-item-name">${esc(r.name)}</span>
+                        ${r.isDefault ? ' <span style="font-size:11px;color:#c9940a;">★ default</span>' : ''}
+                    </div>
+                    ${!r.isDefault ? `<button class="fav-del-btn" style="color:#c9940a;font-size:12px;" onclick="setRecipientDefault(${r.id})" title="Set as default">★</button>` : ''}
+                    <button class="fav-del-btn" onclick="deleteRecipientFav(${r.id})" title="Remove">✕</button>
+                </div>`).join('');
+
+        // Guests
+        const gList = document.getElementById('favGuestsList');
+        gList.innerHTML = favs.guests.length === 0
+            ? '<span class="fav-empty">None saved — fill guest fields and use the 👤▾ button</span>'
+            : favs.guests.map(g => `
+                <div class="fav-item" style="margin-bottom:4px;">
+                    <div class="fav-item-label">
+                        <div class="fav-item-name">${esc(g.name)}</div>
+                        ${g.contact ? `<div class="fav-item-sub">${esc(g.contact)}</div>` : ''}
+                    </div>
+                    <button class="fav-del-btn" onclick="deleteGuestFav(${g.id})" title="Remove">✕</button>
+                </div>`).join('');
+
+        // Locations
+        const lList = document.getElementById('favLocationsList');
+        lList.innerHTML = favs.locations.length === 0
+            ? '<span class="fav-empty">None saved — type a location and use the 📍▾ button</span>'
+            : favs.locations.map(l => `
+                <div class="fav-item" style="margin-bottom:4px;">
+                    <span class="fav-item-name">${esc(l.name)}</span>
+                    <button class="fav-del-btn" onclick="deleteLocationFav(${l.id})" title="Remove">✕</button>
+                </div>`).join('');
+    }
+
+    function toggleFavsPanel() {
+        const content = document.getElementById('favsContent');
+        const chevron = document.getElementById('favsChevron');
+        const open = content.style.display !== 'none';
+        content.style.display = open ? 'none' : 'flex';
+        chevron.textContent = open ? '▾' : '▴';
+    }
+
+    /* ═══════════════════════════════════════════
+       Trip management
+    ═══════════════════════════════════════════ */
+    let tripSeq = 0;
+
+    function buildTimeOptions(selected) {
+        let html = '<option value="">— Select time —</option>';
+        for (let h = 0; h < 24; h++) {
+            for (const m of [0, 15, 30, 45]) {
+                const hh  = String(h).padStart(2, '0');
+                const mm  = String(m).padStart(2, '0');
+                const val = `${hh}:${mm}`;
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                const hDisp = h % 12 || 12;
+                const label = `${hDisp}:${mm} ${ampm}`;
+                html += `<option value="${val}"${selected === val ? ' selected' : ''}>${label}</option>`;
+            }
+        }
+        return html;
+    }
+
+    function addTrip(data = {}) {
+        tripSeq++;
+        const id = tripSeq;
+
+        const card = document.createElement('div');
+        card.className = 'trip-card';
+        card.id = `trip-${id}`;
+        card.innerHTML = `
+            <div class="trip-header" onclick="toggleTrip(${id})">
+                <div class="trip-header-title">
+                    <span class="trip-collapse-icon" id="trip-icon-${id}">▾</span>
+                    <span>Trip <span class="trip-num">#?</span></span>
+                    <span class="trip-summary" id="trip-summary-${id}"></span>
+                </div>
+                <div class="trip-header-actions" onclick="event.stopPropagation()">
+                    <button class="btn-chip btn-chip-dup" onclick="duplicateTrip(${id})" title="Duplicate trip">⧉</button>
+                    <button class="btn-chip btn-chip-del" onclick="deleteTrip(${id})" title="Delete trip">✕</button>
+                </div>
+            </div>
+            <div class="trip-body" id="trip-body-${id}">
+                <div class="field-group">
+                    <label>Pick Up Date</label>
+                    <input type="date" data-field="date" value="${esc(data.date||'')}" oninput="updatePreview()">
+                </div>
+                <div class="field-group">
+                    <label>Pick Up Time</label>
+                    <select data-field="time" onchange="updatePreview()">${buildTimeOptions(data.time||'')}</select>
+                </div>
+                <div class="field-group">
+                    <label>Guest Name</label>
+                    <div class="input-with-btn">
+                        <input type="text" data-field="guestName" value="${esc(data.guestName||'')}" placeholder="Full name" autocomplete="off" oninput="updatePreview()">
+                        <button class="btn-fav" onclick="openGuestPicker(this,${id})" title="Pick or save guest">👤▾</button>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label>Guest Contact</label>
+                    <input type="text" data-field="guestContact" value="${esc(data.guestContact||'')}" placeholder="+60 12-345 6789" autocomplete="off" oninput="updatePreview()">
+                </div>
+                <div class="full-width location-row">
+                    <div class="field-group">
+                        <label>Pick Up Point</label>
+                        <div class="input-with-btn">
+                            <input type="text" data-field="pickUpPoint" value="${esc(data.pickUpPoint||'')}" placeholder="Address / venue" autocomplete="off" oninput="updatePreview()">
+                            <button class="btn-fav" onclick="openLocationPicker(this,${id},'pickUpPoint')" title="Pick or save location">📍▾</button>
+                        </div>
+                    </div>
+                    <button class="btn-swap" onclick="swapLocations(${id})" title="Swap pick up &amp; drop off">⇄</button>
+                    <div class="field-group">
+                        <label>Drop Off Point</label>
+                        <div class="input-with-btn">
+                            <input type="text" data-field="dropOffPoint" value="${esc(data.dropOffPoint||'')}" placeholder="Address / venue" autocomplete="off" oninput="updatePreview()">
+                            <button class="btn-fav" onclick="openLocationPicker(this,${id},'dropOffPoint')" title="Pick or save location">📍▾</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label>Flight Detail</label>
+                    <input type="text" data-field="flight" value="${esc(data.flight||'')}" placeholder="e.g. AK123 / MH456" autocomplete="off" oninput="updatePreview()">
+                </div>
+                <div class="field-group">
+                    <label>No. of Pax</label>
+                    <input type="number" data-field="pax" value="${esc(data.pax||'')}" placeholder="e.g. 2" min="1" max="99" oninput="updatePreview()">
+                </div>
+                <div class="field-group full-width">
+                    <label>Vehicle Type</label>
+                    <select data-field="vehicle" disabled style="background:#f3f4f6;color:#9ca3af;cursor:not-allowed;">
+                        <option value="">To be arranged by transporter</option>
+                    </select>
+                    <span style="font-size:11px;color:#6b7280;margin-top:2px;">ℹ️ To be arranged by transporter</span>
+                </div>
+                <div class="field-group full-width">
+                    <label>Remark</label>
+                    <textarea data-field="remark" placeholder="Special instructions, meet-and-greet, name board, etc." oninput="updatePreview()">${esc(data.remark||'')}</textarea>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('tripsContainer').appendChild(card);
+        renumberTrips();
+        updatePreview();
+    }
+
+    function deleteTrip(id) {
+        const card = document.getElementById(`trip-${id}`);
+        if (card) card.remove();
+        renumberTrips();
+        updatePreview();
+    }
+
+    function duplicateTrip(id) { addTrip(getTripData(id)); }
+
+    function getTripData(id) {
+        const card = document.getElementById(`trip-${id}`);
+        if (!card) return {};
+        const data = {};
+        card.querySelectorAll('[data-field]').forEach(el => { data[el.dataset.field] = el.value; });
+        return data;
+    }
+
+    function getAllTrips() {
+        return Array.from(document.querySelectorAll('.trip-card')).map(card => {
+            const data = {};
+            card.querySelectorAll('[data-field]').forEach(el => { data[el.dataset.field] = el.value; });
+            return data;
+        });
+    }
+
+    function renumberTrips() {
+        document.querySelectorAll('.trip-card .trip-num').forEach((el, i) => { el.textContent = `#${i + 1}`; });
+    }
+
+    /* ═══════════════════════════════════════════
+       Formatting helpers
+    ═══════════════════════════════════════════ */
+    function esc(str) {
+        return String(str)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    function escInline(str) { return esc(str).replace(/\n/g, '<br>'); }
+
+    function fmtDate(s) {
+        if (!s) return '';
+        const [y, m, d] = s.split('-').map(Number);
+        return `${String(d).padStart(2,'0')}-${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1]}-${y}`;
+    }
+    function fmtTime(s) {
+        if (!s) return '';
+        const [h, m] = s.split(':').map(Number);
+        return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`;
+    }
+
+    /* ═══════════════════════════════════════════
+       Email HTML builder
+    ═══════════════════════════════════════════ */
+    const TH = t => `<th style="border:1pt solid #555;padding:4pt 6pt;background:#dce3ef;font-family:Calibri,Arial,sans-serif;font-size:10pt;font-weight:bold;text-align:center;white-space:nowrap;">${t}</th>`;
+    const TD = v => `<td style="border:1pt solid #999;padding:4pt 6pt;font-family:Calibri,Arial,sans-serif;font-size:10pt;vertical-align:top;">${v ? escInline(v) : '<span style="color:#ccc;">—</span>'}</td>`;
+
+    function buildEmailHTML() {
+        const recipient = document.getElementById('recipientName').value.trim();
+        const trips     = getAllTrips();
+        const greeting  = recipient ? `Hi ${esc(recipient)},` : 'Hi,';
+
+        const dataRows = trips.map(t => `
+            <tr>
+                ${TD(fmtDate(t.date))} ${TD(fmtTime(t.time))} ${TD(t.guestName)} ${TD(t.guestContact)}
+                ${TD(t.pickUpPoint)} ${TD(t.dropOffPoint)} ${TD(t.flight)} ${TD(t.pax)} ${TD('')} ${TD(t.remark)}
+            </tr>`).join('');
+
+        return `<p style="font-family:Calibri,Arial,sans-serif;font-size:11pt;margin:0 0 10pt 0;">${greeting}</p>
+<p style="font-family:Calibri,Arial,sans-serif;font-size:11pt;margin:0 0 14pt 0;">Would like to request for your help to make the following transport arrangement, kindly let me know if there are any further information needed, thanks!</p>
+<table style="border-collapse:collapse;width:100%;">
+  <thead><tr>${TH('Pick Up Date')}${TH('Pick Up Time')}${TH('Guest Name')}${TH('Guest Contact')}${TH('Pick Up Point')}${TH('Drop Off Point')}${TH('Flight Detail')}${TH('No. of Pax')}${TH('Vehicle Type')}${TH('Remark')}</tr></thead>
+  <tbody>${dataRows}</tbody>
+</table>`;
+    }
+
+    /* ═══════════════════════════════════════════
+       Live preview + auto-save
+    ═══════════════════════════════════════════ */
+    function updatePreview() {
+        document.getElementById('previewBody').innerHTML = buildEmailHTML();
+        // Refresh summaries on all collapsed cards
+        document.querySelectorAll('.trip-card').forEach(card => {
+            const id = card.id.replace('trip-', '');
+            updateTripSummary(id);
+        });
+        saveState();
+    }
+
+    function swapLocations(id) {
+        const card     = document.getElementById(`trip-${id}`);
+        const pickUp   = card.querySelector('[data-field="pickUpPoint"]');
+        const dropOff  = card.querySelector('[data-field="dropOffPoint"]');
+        const tmp      = pickUp.value;
+        pickUp.value   = dropOff.value;
+        dropOff.value  = tmp;
+        updatePreview();
+    }
+
+    function toggleTrip(id) {
+        const body = document.getElementById(`trip-body-${id}`);
+        const icon = document.getElementById(`trip-icon-${id}`);
+        if (!body) return;
+        const collapsed = body.style.display === 'none';
+        body.style.display = collapsed ? 'grid' : 'none';
+        icon.textContent = collapsed ? '▾' : '▸';
+        updateTripSummary(id);
+    }
+
+    function updateTripSummary(id) {
+        const summaryEl = document.getElementById(`trip-summary-${id}`);
+        const body      = document.getElementById(`trip-body-${id}`);
+        if (!summaryEl || !body) return;
+        if (body.style.display !== 'none') { summaryEl.textContent = ''; return; }
+        const data  = getTripData(id);
+        const parts = [];
+        if (data.date)     parts.push(fmtDate(data.date));
+        if (data.time)     parts.push(fmtTime(data.time));
+        if (data.guestName) parts.push(data.guestName);
+        const route = [data.pickUpPoint, data.dropOffPoint].filter(Boolean).join(' → ');
+        if (route) parts.push(route);
+        summaryEl.textContent = parts.length ? parts.join(' · ') : 'No details yet';
+    }
+
+    /* ═══════════════════════════════════════════
+       Copy to clipboard
+    ═══════════════════════════════════════════ */
+    async function copyEmail() {
+        const html = buildEmailHTML();
+        let ok = false;
+        if (navigator.clipboard && window.ClipboardItem) {
+            try {
+                await navigator.clipboard.write([new ClipboardItem({
+                    'text/html':  new Blob([html], { type: 'text/html' }),
+                    'text/plain': new Blob([html.replace(/<[^>]+>/g,' ').replace(/\s{2,}/g,' ')], { type: 'text/plain' }),
+                })]);
+                ok = true;
+            } catch(_) {}
+        }
+        if (!ok) {
+            const d = document.createElement('div');
+            d.innerHTML = html;
+            d.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+            document.body.appendChild(d);
+            const sel = window.getSelection(), r = document.createRange();
+            r.selectNodeContents(d); sel.removeAllRanges(); sel.addRange(r);
+            try { document.execCommand('copy'); ok = true; } catch(_) {}
+            sel.removeAllRanges(); document.body.removeChild(d);
+        }
+        showToast(ok ? '✓ Copied! Paste (Ctrl+V) into your email body.' : '✗ Copy failed — try manually selecting the preview.');
+    }
+
+    /* ═══════════════════════════════════════════
+       Reset
+    ═══════════════════════════════════════════ */
+    function resetAll() {
+        if (!confirm('Clear the form and start fresh? (Favorites are kept.)')) return;
+        document.getElementById('recipientName').value = '';
+        document.getElementById('tripsContainer').innerHTML = '';
+        tripSeq = 0;
+        try { localStorage.removeItem('transportForm'); } catch(_) {}
+        addTrip();
+    }
+
+    /* ═══════════════════════════════════════════
+       LocalStorage — form state
+    ═══════════════════════════════════════════ */
+    function saveState() {
+        try {
+            localStorage.setItem('transportForm', JSON.stringify({
+                recipient: document.getElementById('recipientName').value,
+                trips: getAllTrips(),
+            }));
+        } catch(_) {}
+    }
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem('transportForm');
+            if (!raw) return false;
+            const { recipient, trips } = JSON.parse(raw);
+            document.getElementById('recipientName').value = recipient || '';
+            if (Array.isArray(trips) && trips.length > 0) {
+                trips.forEach(t => addTrip(t));
+                return true;
+            }
+        } catch(_) {}
+        return false;
+    }
+
+    /* ═══════════════════════════════════════════
+       Toast
+    ═══════════════════════════════════════════ */
+    /* ── Avatar bubble ── */
+    const BUBBLE_LINES = [
+        "Hello, World! 👋",
+        "The newest hottest programming language is English 💪",
+        "Huat ar! 🤑",
+        ".......... 😑😑😑😑",
+    ];
+    let _bubbleTimer;
+    let _lastBubbleIdx = -1;
+    function toggleBubble() {
+        const bubble = document.getElementById('speechBubble');
+        clearTimeout(_bubbleTimer);
+        // Pick a random line, avoiding repeating the last one
+        let idx;
+        do { idx = Math.floor(Math.random() * BUBBLE_LINES.length); }
+        while (BUBBLE_LINES.length > 1 && idx === _lastBubbleIdx);
+        _lastBubbleIdx = idx;
+        bubble.textContent = BUBBLE_LINES[idx];
+        bubble.classList.add('show');
+        _bubbleTimer = setTimeout(() => bubble.classList.remove('show'), 3000);
+    }
+
+    let _toastTimer;
+    function showToast(msg) {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.classList.add('show');
+        clearTimeout(_toastTimer);
+        _toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    /* ═══════════════════════════════════════════
+       Init
+    ═══════════════════════════════════════════ */
+    // Auto-load default recipient if form state has no recipient saved
+    (function init() {
+        const loaded = loadState();
+        if (!loaded) addTrip();
+        // If recipient field still empty, apply default recipient from favorites
+        if (!document.getElementById('recipientName').value.trim()) {
+            const favs = loadFavs();
+            const def  = favs.recipients.find(r => r.isDefault);
+            if (def) document.getElementById('recipientName').value = def.name;
+        }
+        renderFavsPanel();
+        updatePreview();
+        // Start favorites panel open; JS will manage toggle after
+        // (CSS default is flex/open — close it initially for cleaner start)
+        toggleFavsPanel(); // close on load; user opens when needed
+    })();
+</script>
+</body>
+</html>
