@@ -569,6 +569,13 @@
                     <div class="favs-section-title">Saved Locations</div>
                     <div id="favLocationsList"></div>
                 </div>
+                <div style="display:flex;gap:8px;padding-top:4px;border-top:1px solid #e5e7eb;margin-top:2px;">
+                    <button class="btn btn-outline" style="flex:1;padding:7px 10px;font-size:12px;" onclick="exportFavs()">⬇ Export</button>
+                    <label class="btn btn-outline" style="flex:1;padding:7px 10px;font-size:12px;text-align:center;cursor:pointer;margin:0;">
+                        ⬆ Import
+                        <input type="file" accept=".json" onchange="importFavs(event)" style="display:none;">
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -959,6 +966,40 @@
         chevron.textContent = open ? '▾' : '▴';
     }
 
+    function exportFavs() {
+        const favs = loadFavs();
+        const blob = new Blob([JSON.stringify(favs, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'transport_favorites.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('✓ Favorites exported');
+    }
+
+    function importFavs(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (!data.recipients && !data.guests && !data.locations)
+                    throw new Error('Invalid format');
+                saveFavs({
+                    recipients: data.recipients || [],
+                    guests:     data.guests     || [],
+                    locations:  data.locations  || [],
+                });
+                showToast('✓ Favorites imported');
+            } catch(_) {
+                showToast('✗ Invalid file — please use an exported favorites JSON');
+            }
+            event.target.value = ''; // reset so same file can be re-imported
+        };
+        reader.readAsText(file);
+    }
+
     /* ═══════════════════════════════════════════
        Trip management
     ═══════════════════════════════════════════ */
@@ -1258,8 +1299,12 @@
     const BUBBLE_LINES = [
         "Hello, World! 👋",
         "The newest hottest programming language is English 💪",
-        "Huat ar! 🤑",
+        "恭喜发财，红包拿来 🤑",
         ".......... 😑😑😑😑",
+        "To be or not to be, that is not a question",
+        "Coffee 🍵 Because adulting is hard",
+        "Tiap tiap hari, makan kari. Sana sini, cari money.",
+        "Welcome to my Dungeon 🔥😈",
     ];
     let _bubbleTimer;
     let _lastBubbleIdx = -1;
